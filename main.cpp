@@ -8,7 +8,7 @@
 //Creates a competition object that allows access to Competition methods.
 vex::competition    Competition;
 
-int autoMode;
+
 
 
 /*---------------------------------------------------------------------------*/
@@ -66,6 +66,7 @@ void autonomous( void ) {
   // Insert autonomous user code here.
   // ..........................................................................
     int xPos = Brain.Screen.xPosition();
+    int autoMode;
     int yPos = Brain.Screen.yPosition();
     double LR; //1 denotes starting from the Red Side; -1 denotes starting from the Blue Side
     bool far;

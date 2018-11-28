@@ -2,14 +2,15 @@
 using namespace vex;
 vex::brain Brain;
 vex::controller Controller1;
-vex::motor FrontLeft(vex::PORT1, vex::gearSetting::ratio18_1, false);
-vex::motor BackLeft(vex::PORT2, vex::gearSetting::ratio18_1, false);
-vex::motor FrontRight(vex::PORT3, vex::gearSetting::ratio18_1, false);
-vex::motor BackRight(vex::PORT4, vex::gearSetting::ratio18_1, false);
-vex::motor LiftMotor1(vex::PORT5,vex::gearSetting::ratio18_1, true );
-vex::motor LiftMotor2(vex::PORT6,vex::gearSetting::ratio18_1, false );
-vex::motor ClawMotor(vex::PORT7,vex::gearSetting::ratio18_1, false );
-vex::motor Puncher(vex::PORT8,vex::gearSetting::ratio18_1, false );
+vex::motor FrontLeft(vex::PORT21, vex::gearSetting::ratio18_1, false);
+vex::motor BackLeft(vex::PORT3, vex::gearSetting::ratio18_1, false);
+vex::motor FrontRight(vex::PORT9, vex::gearSetting::ratio18_1, false);
+vex::motor BackRight(vex::PORT2, vex::gearSetting::ratio18_1, false);
+vex::motor LiftMotor1(vex::PORT1,vex::gearSetting::ratio18_1, true );
+vex::motor LiftMotor2(vex::PORT16,vex::gearSetting::ratio18_1, false );
+vex::motor ClawMotor(vex::PORT10,vex::gearSetting::ratio18_1, false );
+vex::motor PuncherMotor(vex::PORT8,vex::gearSetting::ratio18_1, false );
+
 
 class Claw{
 public:
@@ -38,7 +39,9 @@ public:
     Lift(){
         LiftMotor1.setRotation(0,rotationUnits::deg);
         LiftMotor2.setRotation(0,rotationUnits::deg);
-        pos[0] = 0; pos[1] = 200; pos[2] = 420;
+        LiftMotor1.setMaxTorque(100,percentUnits::pct);
+        LiftMotor2.setMaxTorque(100,percentUnits::pct);
+        pos[0] = -30; pos[1] = 220; pos[2] = 600;
     }
     void lowerLift(void){
         if (currentLiftIndex != 0){
@@ -55,43 +58,28 @@ public:
         }
     }
     int liftOperation(){
+        bool motorOff = false;
         if (Controller1.ButtonL2.pressing()){
             lowerLift();
-            vex::task::sleep(1);
+            //vex::task::sleep(500);
         }
         if (Controller1.ButtonR2.pressing()){
             raiseLift();
 
-            vex::task::sleep(1);
+            //vex::task::sleep(500);
         }
         //Controller1.ButtonR2.pressed(lowerLift());
         //Controller1.ButtonL2.pressed(raiseLift(void));
-        if ( (currentLiftIndex != 0) ){
-            sleep = false;
-            LiftMotor1.startRotateTo(pos[currentLiftIndex], rotationUnits::deg,50,velocityUnits::pct);
-            LiftMotor2.startRotateTo(pos[currentLiftIndex], rotationUnits::deg,50,velocityUnits::pct);
-            vex::task::sleep(300);
-        } else if (sleep == false){
-            //LiftMotor1.startRotateFor(-100,rotationUnits::deg,50,velocityUnits::pct);
-            //LiftMotor2.startRotateFor(-100,rotationUnits::deg,50,velocityUnits::pct);
-            LiftMotor1.startRotateTo(pos[currentLiftIndex], rotationUnits::deg,120,velocityUnits::pct);
-            LiftMotor2.startRotateTo(pos[currentLiftIndex], rotationUnits::deg,120,velocityUnits::pct);
-            vex::task::sleep(300);
-            LiftMotor1.setRotation(0,rotationUnits::deg);
-            LiftMotor2.setRotation(0,rotationUnits::deg);
-            sleep = true;
+
+        LiftMotor1.startRotateTo(pos[currentLiftIndex], rotationUnits::deg,70,velocityUnits::pct);
+        LiftMotor2.startRotateTo(pos[currentLiftIndex], rotationUnits::deg,70,velocityUnits::pct);
+        //vex::task::sleep(500);
+        if (Controller1.ButtonB.pressing()){
+            motorOff = !motorOff;
         }
-        if ((sleep == true) && !(Controller1.ButtonL2.pressing()) && !(Controller1.ButtonR2.pressing())){
+        if (motorOff){
             LiftMotor1.stop();
             LiftMotor2.stop();
-        } else if (Controller1.ButtonL2.pressing()) {
-            LiftMotor1.spin(directionType::rev,100, velocityUnits::pct);
-            LiftMotor2.spin(directionType::rev,100, velocityUnits::pct);
-            //LiftMotor1.setRotation(0,rotationUnits::deg);
-            //LiftMotor2.setRotation(0,rotationUnits::deg);
-        } else if (Controller1.ButtonR2.pressing() && (currentLiftIndex == 2)){
-            LiftMotor1.spin(directionType::fwd,100, velocityUnits::pct);
-            LiftMotor2.spin(directionType::fwd,100, velocityUnits::pct);
         }
         Brain.Screen.setCursor(7,1);
         Brain.Screen.print("CurrentLiftIndex =%d",currentLiftIndex);
@@ -123,9 +111,9 @@ public:
 class Drive{
 public:
     int inverse = 1;
-    double unitRotation = 20;
+    double unitRotation = 18.5;
     double piTurn = 642;
-    double unevenRatio = 0.9;
+    double unevenRatio = 0.995;
     void stopMotor(){
         FrontLeft.stop();
         FrontRight.stop();
@@ -218,15 +206,15 @@ public:
                 y = 0;
             }
 
-            if (Controller1.ButtonB.pressing()){
+            /*if (Controller1.ButtonB.pressing()){
                 rotateBack();
                 vex::task::sleep(1100);
-            }
+            }*/
             if ( (abs(x) > threshold) || (abs(y) > threshold) || (abs(r)>0)){
-                FrontLeft.spin(directionType::fwd, power*inverse*(y+x+r), velocityUnits::pct);
+                FrontLeft.spin(directionType::fwd, unevenRatio*power*inverse*(y+x+r), velocityUnits::pct);
                 FrontRight.spin(directionType::fwd, power*inverse*(-y+x+r), velocityUnits::pct);
                 BackRight.spin(directionType::fwd, power*inverse*(-y-x+r), velocityUnits::pct);
-                BackLeft.spin(directionType::fwd, power*inverse*(y-x+r), velocityUnits::pct);
+                BackLeft.spin(directionType::fwd, unevenRatio*power*inverse*(y-x+r), velocityUnits::pct);
             } else{
                 FrontLeft.stop();
                 FrontRight.stop();
